@@ -11,7 +11,7 @@ import time
 # Connection setup
 s = Server(sr=48000, buffersize=1024, duplex=1, winhost="asio").boot()
 port = 8000
-tStickId = "/TStick_315"
+tStickId = "/TStick_195"
 
 # Variable initialization for parameters, synthesizer, inputs, points and models
 
@@ -85,6 +85,9 @@ current_state = {
     "v_y": 0.0007,
 }
 
+optimizer = torch.optim.Adam(decoderModel.parameters(), lr=0.001)
+criterion = torch.nn.MSELoss()
+
 def has_new_note(input_dict, path, values):
     return input_dict[path[0]].count(0) > values.count(0)
 
@@ -124,16 +127,9 @@ def updateInput(address, *args):
     else:
         args = list(args)
 
-    #print(input)
     fill_dict(input, address, args)
 
 def play_note():
-    # pressedSensorCount = input["raw"]["capsense"].count(1)
-    # parameters["FMindex"].value = pressedSensorCount/2
-    # sliders[3].set(pressedSensorCount//3)
-
-    # parameters["f"].value = sliders[0].get()
-
     parameters["env"].play() # Plays the note
 
 s.start()
@@ -189,8 +185,6 @@ def train_decoder():
         print("Not enough points to train")
         return
     print("Training model")
-    optimizer = torch.optim.Adam(decoderModel.parameters(), lr=0.01)
-    criterion = torch.nn.MSELoss()
     for epoch in range(100):
         optimizer.zero_grad()
         predicted_params = decoderModel(torch.tensor(points))
@@ -232,19 +226,19 @@ def simulate_current_state(dt, ball):
 
 
 def save_points(): # Save points to a txt file
-    with open("T-Stick Sound Synthesis Interface/points.txt", "w") as f:
+    with open("points.txt", "w") as f:
         f.write(str(points))
-    with open("T-Stick Sound Synthesis Interface/point_params.txt", "w") as f:
+    with open("point_params.txt", "w") as f:
         f.write(str(point_params))
 
 def load_points(): # Load points from a txt file
     global points, point_params
     clear_points()
-    with open("T-Stick Sound Synthesis Interface/points.txt", "r") as f:
+    with open("points.txt", "r") as f:
         points = eval(f.read())
         for point in points:
             canvas.create_oval(point[0]*mapDim["width"]-ball_size, point[1]*mapDim["height"]-ball_size, point[0]*mapDim["width"]+ball_size, point[1]*mapDim["height"]+ball_size, outline='black', fill='red', tags=('ball'))
-    with open("T-Stick Sound Synthesis Interface/point_params.txt", "r") as f:
+    with open("point_params.txt", "r") as f:
         point_params = eval(f.read())
 
 def clear_points(): # Clear points from the canvas
